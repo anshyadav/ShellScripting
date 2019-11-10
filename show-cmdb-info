@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Usage: show-cmdb-info [-c]
+# Display server information that may be requested for CMDB entries or inventory.
+# Options:
+#   -c	Ouput in csv format.
+
+# Run as root
+[ "$EUID" -eq 0 ] || {
+  echo 'Please run with sudo or as root.'
+  exit 1
+}
+
+FIELD_SEPARATOR=': '
+
+# Pass in -c for CSV format
+[ "$1" = '-c' ] && FIELD_SEPARATOR=','
+
+# Host name
+echo "Hostname${FIELD_SEPARATOR}$(uname -n)"
+echo "FQDN${FIELD_SEPARATOR}$(hostname -f)"
+
+# System model, product, serial
+dmidecode -t system | egrep 'Manufacturer:|Product Name:|Serial Number:' | sed 's/^\s*//' | sed "s/: /${FIELD_SEPARATOR}/"
+
+# OS, kernel, platform.
+echo "Karnel Name${FIELD_SEPARATOR}$(uname -s)"
+echo "Kernel Release${FIELD_SEPARATOR}$(uname -r)"
+echo "Architecture${FIELD_SEPARATOR}$(uname -m)"
+
+
+echo "Storage assigned to volume groups in GB${FIELD_SEPARATOR}$(vgs --units g --noheadings 2>&1 | grep -v "^|" | grep -v 'Could' | awk '{print $6}' | cut -f1 -d. | awk '{sum+=$1} END{printf("%d\n",sum)}')"
+
+# NICS
+echo "Network interfaces${FIELD_SEPARATOR}$(netstat -i | egrep -v 'Iface|Interface' | awk '{print $1}' | grep -v "^lo$" | sort | xargs)"
+echo "IP Addresses${FIELD_SEPARATOR}$(ipconfig getifaddr en0)"
+
+# Timezone
+echo "Timezone${FIELD_SEPARATOR}$(date +%Z)"
