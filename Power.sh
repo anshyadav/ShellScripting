@@ -6,6 +6,6 @@ pow=1
 while(($b>0))
 do
 pow=$(($pow*$a))
-$b=$((b-1))
+b=$((b-1))
 done
 echo $pow
